@@ -2,7 +2,7 @@
 
 Ein einfaches Shell-Skript zum Upgrade von Debian-Containern (z. B. **Proxmox LXC**) auf die jeweils nächste Debian-Hauptversion.
 
-**Repository:** [MSM-developers/scripts](https://github.com/MSM-developers/scripts) (privat)  
+**Repository:** [MSM-developers/scripts](https://github.com/MSM-developers/scripts) (öffentlich)  
 **Skript:** [`debian-container-upgrade.sh`](https://github.com/MSM-developers/scripts/blob/main/debian-container-upgrade.sh)
 
 ## Unterstützte Upgrades
@@ -21,21 +21,20 @@ Pro Ausführung erfolgt **genau ein Versionssprung**. Für Debian 11 → 13 das 
 - `curl` und eine funktionierende Internetverbindung
 - Ausreichend freier Speicherplatz
 - **Vorher ein Proxmox-Backup oder einen Snapshot erstellen**
-- Bei privatem GitHub-Repository: ein [Fine-grained Personal Access Token](https://github.com/settings/personal-access-tokens) mit Zugriff auf `MSM-developers/scripts` und **Contents: Read-only**
 
 > **Wichtig:** Das Skript ändert Paketquellen und installiert zahlreiche Systempakete. Prüfe vorab die Kompatibilität deiner Anwendungen. Es erstellt selbst keinen Proxmox-Snapshot und führt keinen automatischen Neustart durch.
 
-## Installation und Ausführung (privates GitHub-Repository)
+## Installation und Ausführung (öffentliches GitHub-Repository)
 
-Den folgenden **Einzeiler als `root` in einer interaktiven Bash-Shell im Debian-Container** ausführen:
+Den folgenden **Einzeiler als `root` im Debian-Container** ausführen:
 
 ```bash
-read -rsp 'GitHub-Token: ' GH_TOKEN; echo; if [ -n "$GH_TOKEN" ]; then curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/MSM-developers/scripts/contents/debian-container-upgrade.sh?ref=main' -o /tmp/debian-container-upgrade.sh && sh /tmp/debian-container-upgrade.sh; fi; unset GH_TOKEN
+curl -fsSL https://raw.githubusercontent.com/MSM-developers/scripts/main/debian-container-upgrade.sh -o /tmp/debian-container-upgrade.sh && sh /tmp/debian-container-upgrade.sh
 ```
 
-Der Befehl fragt das Token verdeckt ab, lädt die **Raw-Datei über die GitHub-API** herunter und startet sie anschließend. Durch `&&` wird das Skript nur gestartet, wenn der Download erfolgreich war. Das Token muss nicht in die Befehlszeile eingefügt werden und landet dadurch nicht als Klartext in der Shell-History.
+Der Befehl lädt das Skript von GitHub und führt es nur aus, wenn der Download erfolgreich war. **Kein GitHub-Token erforderlich.** Vor dem Upgrade fragt das Skript nach einer Bestätigung.
 
-**Token erstellen:** GitHub → *Settings* → *Developer settings* → *Personal access tokens* → *Fine-grained tokens*. Als Repository `MSM-developers/scripts` auswählen und für **Contents** nur **Read-only** vergeben. Token nicht in Git committen oder in Skripten hinterlegen. Beachte, dass ein Token während der `curl`-Ausführung kurzzeitig in Prozessargumenten sichtbar sein kann.
+> **Tipp:** Die Datei zuerst herunterladen und dann ausführen ist bei diesem interaktiven Skript besser als `curl | sh`, da es Eingaben vom Terminal erwartet. Wer das Skript vorher prüfen möchte, kann den Download-Befehl ohne `&& sh ...` ausführen und die Datei lesen.
 
 ### Alternative: Manuell aus einer lokalen Datei
 
@@ -79,15 +78,15 @@ Kontrolliere deine Anwendungen und aktiviere erforderliche Drittanbieter-Reposit
 ## Sicherheit und Fehlerbehebung
 
 - **Kein Backup, kein Upgrade:** Sichere den Container auf dem Proxmox-Host vor dem Start.
-- **Downloadfehler 401/403/404:** Prüfe Token, Token-Berechtigungen, Repository-Freigabe und Branch `main`.
+- **Downloadfehler 404:** Prüfe, ob das Repository tatsächlich öffentlich ist, die Datei existiert und der Branch `main` heißt.
 - **APT-/Paketfehler:** Fehlermeldungen prüfen und nicht blind ein weiteres Upgrade starten. Das APT-Backup liegt unter `/root/debian-upgrade-...`.
 - **Proxmox-Host:** Das Skript ist für die Ausführung **im Container** gedacht und verweigert die Ausführung, wenn `pveversion` vorhanden ist.
 - **Keine vollständige Kompatibilitätsprüfung:** Anwendungsspezifische Repositories, installierte Dienste und Konfigurationsdateien müssen ggf. manuell angepasst werden.
 
 ## Technische Hinweise
 
-- Shell: POSIX `sh` für das Upgrade-Skript, **Bash** für den obigen Token-Einzeiler
+- Shell: POSIX `sh` für das Upgrade-Skript und den Einzeiler
 - Das Skript ist **nicht für unbeaufsichtigte Upgrades** vorgesehen.
 - Die Ausführung erfolgt auf eigene Verantwortung; der Upgrade-Prozess sollte zunächst an einem Testcontainer geprüft werden.
 
-Weitere Informationen: [Debian-Release-Notes](https://www.debian.org/releases/), [GitHub REST API: Repository contents](https://docs.github.com/en/rest/repos/contents).
+Weitere Informationen: [Debian-Release-Notes](https://www.debian.org/releases/).
